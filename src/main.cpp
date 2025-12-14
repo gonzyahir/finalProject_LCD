@@ -1,3 +1,16 @@
+/*
+Improvements I would implement if more time
+(1) Better debouncing to accurately switch machine states
+(2) Interrupt over I2C for the built in button on the encoder
+(3) Involve stepper motor for the 4 bar mechanism. The main issue was speed and direction
+(4) A significantly better menu screen to better choose machine state
+(5) A more accurate pulse count. The current approach seems to drift away a bit but works
+(6) Added functionality of the NeoPixel, such as blinking yellow to indicate that its waiting or moving
+(7) Better manual control. Current is insensitive in the beggining but then quicly speeds up. Goes along with better pulse count
+(8) More machine states such as a time and clock (Wifi) for added functionality
+(9) More data displayed on LCD screen such as current position.
+*/
+
 #include <Arduino.h>
 #include <Wire.h>
 #include "Adafruit_seesaw.h"
@@ -14,16 +27,12 @@
 #include <stdint.h>
 #include <SCMD_config.h>
 
-bool laptopNotStored = true;
-
 // ----------------- Servo Motor --------------
 int servoLimitSW = A0;
 int encoderA = 10;
 int encoderB = 11;
 int motorSpeed = 255;
 #define MOTOR 1
-int forwardDir = 1;
-int backwardDir = 0;
 
 // Motor: ID=1, encoder pins 10 and 11
 SCMDMotor servo(MOTOR, encoderA, encoderB);
@@ -36,8 +45,6 @@ int rotaryEncoder = 0;
 
 int switchPin = 12;      // Button pin
 
-bool processInitiated = false;
-
 Adafruit_seesaw ss;
 seesaw_NeoPixel pixel = seesaw_NeoPixel(1, SS_NEOPIX_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -48,8 +55,6 @@ int RST_pin = 5;
 int DC_Pin = 9;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(CS_Pin, DC_Pin, RST_pin);
-
-bool prevButtonState = 1;
 
 enum machineStates {
   offState,
